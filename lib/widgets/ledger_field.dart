@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../appColors.dart';
+import '../app_colors.dart';
 
 // ─────────────────────────────────────────────────────────
 // Este widget antes vivía dentro de login.dart como "_LedgerField"

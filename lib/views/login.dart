@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../appColors.dart';
-import 'widgets/ledgerField.dart';
+import '../app_colors.dart';
+import '../widgets/ledger_field.dart';
 import 'register.dart';
- 
+import 'main_navigation.dart';
+import '../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 // ─────────────────────────────────────────────────────────
 // StatefulWidget vs StatelessWidget:
 // - Un StatelessWidget se dibuja una vez y no cambia solo (ej. un ícono fijo).
@@ -20,14 +23,11 @@ class LoginScreen extends StatefulWidget {
 }
  
 class _LoginScreenState extends State<LoginScreen> {
-  // Los TextEditingController son quienes "guardan" lo que el usuario
-  // escribe en un campo de texto. Se conectan al TextField más abajo.
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = SupabaseService();
  
-  // Variable de estado simple: controla si la contraseña se ve como
-  // texto plano o como puntos (•••). Al cambiar, Flutter redibuja
-  // solo la parte de pantalla que depende de ella.
   bool _obscurePassword = true;
   bool _loading = false;
  
@@ -39,22 +39,40 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
- 
-  void _handleLogin() {
-    // Aquí, más adelante, llamarás a tu AuthController/AuthService
-    // (ej. Supabase.auth.signInWithPassword(...)).
-    // Por ahora solo simulamos un estado de "cargando" para que veas
-    // cómo se conecta la interfaz con la lógica.
-    setState(() {
-      _loading = true;
-    });
- 
-    Future.delayed(const Duration(seconds: 1), () {
+
+void _handleLogin() async {
+  setState(() {
+    _loading = true;
+  });
+
+  try {
+    await _authService.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigation()),
+      );
+    }
+  } on AuthException catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
       setState(() {
         _loading = false;
       });
-    });
+    }
   }
+}
  
   // build() es el método que describe QUÉ se dibuja en pantalla.
   // Flutter lo vuelve a llamar automáticamente cada vez que algo
@@ -98,8 +116,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
  
-  // Dividir la pantalla en pequeños métodos _buildAlgo() es una
-  // práctica común en Flutter: hace el build() principal más legible.
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

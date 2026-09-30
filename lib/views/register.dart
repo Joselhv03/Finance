@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../appColors.dart';
-import 'widgets/ledgerField.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../app_colors.dart';
+import '../widgets/ledger_field.dart';
+import '../services/supabase_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _userNameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _authService = SupabaseService();
 
   bool _obscurePassword = true;
   bool _loading = false;
@@ -28,13 +31,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
+  void _handleRegister() async {
     // Validación simple: comparamos el texto de los dos controllers
-    // ANTES de mostrar el loading o llamar a Supabase. Más adelante,
-    // cuando conectemos el AuthController, esta lógica se moverá ahí.
+    // ANTES de mostrar el loading o llamar a Supabase.
     if (_passwordController.text != _confirmPasswordController.text) {
-      // ScaffoldMessenger es la forma estándar de mostrar mensajes
-      // temporales (SnackBars) sobre la pantalla actual.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -51,11 +51,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _loading = true;
     });
 
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        _loading = false;
-      });
-    });
+    try {
+      await _authService.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        username: _userNameController.text.trim(),
+      );
+      
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -79,6 +97,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
+                Text(
+                  'Regístrate para empezar a llevar tu ahorro',
+                  style: GoogleFonts.ibmPlexSans(
+                    fontSize: 14,
+                    color: AppColors.textDim,
+                  ),
+                ),
                 const SizedBox(height: 40),
 
                 LedgerField(
