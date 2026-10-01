@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../app_colors.dart';
 import '../widgets/expandable_account_card.dart';
 import '../widgets/create_account_sheet.dart';
+import '../widgets/edit_account_sheet.dart';
 
 // Modelo simple en memoria para esta pantalla. Cuando conectemos
 // Supabase, esto se reemplaza por tu modelo real de la tabla Account.
@@ -63,6 +64,25 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
   }
 
+  // EditAccountData no trae 'total' (no se edita a mano), así que
+  // reconstruimos el _AccountItem conservando el total que ya tenía.
+  void _handleEditAccount(int index, EditAccountData data) {
+    setState(() {
+      _accounts[index] = _AccountItem(
+        name: data.name,
+        total: _accounts[index].total,
+        target: data.targetAmount,
+        color: data.color,
+      );
+    });
+  }
+
+  void _handleDeleteAccount(int index) {
+    setState(() {
+      _accounts.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,6 +114,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
                       total: account.total,
                       target: account.target,
                       color: account.color,
+                      onEdit: (data) => _handleEditAccount(index, data),
+                      onDelete: () => _handleDeleteAccount(index),
                     );
                   },
                 ),
