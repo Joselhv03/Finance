@@ -31,8 +31,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _loading = false;
  
-  // dispose() se llama cuando el widget se destruye (ej. al navegar a
-  // otra pantalla). Liberar los controllers evita fugas de memoria.
   @override
   void dispose() {
     _emailController.dispose();
@@ -146,15 +144,12 @@ void _handleLogin() async {
       controller: _passwordController,
       obscureText: _obscurePassword,
       suffix: IconButton(
-        // Ícono de ojito para mostrar/ocultar la contraseña.
         icon: Icon(
           _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
           color: AppColors.textDim,
           size: 20,
         ),
         onPressed: () {
-          // setState() le dice a Flutter: "algo cambió, vuelve a
-          // llamar build() para reflejarlo en pantalla".
           setState(() {
             _obscurePassword = !_obscurePassword;
           });
@@ -198,7 +193,6 @@ void _handleLogin() async {
     return Center(
       child: TextButton(
         onPressed: () {
-          // Aquí luego navegarás a una pantalla de registro:
           Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
         },
         child: Text(

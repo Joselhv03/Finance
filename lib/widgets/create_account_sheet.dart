@@ -3,9 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../app_colors.dart';
 import 'ledger_field.dart';
 
-// Paleta de colores disponibles para personalizar una cuenta.
-// Elegidos para que se sigan viendo bien sobre el fondo oscuro de
-// la app (nada demasiado apagado ni demasiado saturado).
 const List<Color> accountColorPalette = [
   AppColors.usd, // azul-violeta (color por defecto)
   AppColors.bs, // ámbar
@@ -15,8 +12,6 @@ const List<Color> accountColorPalette = [
   Color(0xFF4FC3F7), // celeste
 ];
 
-// El resultado que le devuelve la hoja a quien la llamó, para que
-// la pantalla de Cuentas sepa qué hacer con los datos.
 class NewAccountData {
   final String name;
   final double initialAmount;
@@ -31,8 +26,6 @@ class NewAccountData {
   });
 }
 
-// Función helper: así se abre la hoja desde cualquier pantalla.
-// Devuelve los datos si el usuario guardó, o null si canceló.
 Future<NewAccountData?> showCreateAccountSheet(BuildContext context) {
   return showModalBottomSheet<NewAccountData>(
     context: context,

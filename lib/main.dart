@@ -7,7 +7,6 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Carga el archivo .env y deja sus valores disponibles globalmente a través de dotenv.env['NOMBRE_VARIABLE'].
   await dotenv.load(fileName: '.env');
 
   await Supabase.initialize(
@@ -18,8 +17,7 @@ void main() async {
   runApp(const MainApp());
 }
 
-// Acceso rápido al cliente de Supabase desde cualquier parte de la
-// app, sin tener que escribir Supabase.instance.client cada vez.
+
 final supabase = Supabase.instance.client;
 
 class MainApp extends StatelessWidget {

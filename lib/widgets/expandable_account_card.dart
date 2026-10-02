@@ -6,16 +6,11 @@ import 'edit_account_sheet.dart';
 class ExpandableAccountCard extends StatefulWidget {
   final String name;
   final double total;
-  final double? target; // null = sin meta, no muestra barra de progreso
+  final double? target; // null = sin meta
   final Color color;
 
-  // Se ejecuta cuando el usuario confirma los cambios en la hoja de
-  // edición. El widget solo "pide" los nuevos datos; es el padre
-  // (accounts_screen.dart) quien decide cómo actualizar la lista.
   final ValueChanged<EditAccountData> onEdit;
 
-  // Se ejecuta SOLO después de que el usuario confirma el diálogo
-  // de "¿seguro que quieres eliminar?" dentro de esta misma tarjeta.
   final VoidCallback onDelete;
 
   const ExpandableAccountCard({
@@ -79,8 +74,6 @@ class _ExpandableAccountCardState extends State<ExpandableAccountCard> {
       ),
     );
 
-    // confirmed puede ser true, false, o null (si tocó fuera del
-    // diálogo para cerrarlo) — solo procedemos si es true.
     if (confirmed == true) {
       widget.onDelete();
     }
@@ -175,8 +168,6 @@ class _ExpandableAccountCardState extends State<ExpandableAccountCard> {
             ),
           ],
 
-          // ── Botones de editar/eliminar, al final del contenido
-          // expandido, como pediste.
           const SizedBox(height: 16),
           Row(
             children: [

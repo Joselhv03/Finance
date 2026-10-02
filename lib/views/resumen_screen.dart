@@ -25,9 +25,6 @@ class ResumenScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Datos de ejemplo. Cuando conectemos Supabase,
-                      // esto va a venir de un controller que consulte
-                      // la tabla Month del mes actual.
                       const LedgerCard(
                         label: 'Ingresos del mes',
                         amount: '27.432,55',
@@ -100,8 +97,6 @@ class ResumenScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Por ahora las flechas no hacen nada: cuando conectemos
-          // datos reales, van a cambiar el mes que se está consultando.
           Icon(Icons.chevron_left, color: AppColors.textDim),
           Text(
             'Septiembre 2026',

@@ -4,8 +4,6 @@ import '../app_colors.dart';
 import '../widgets/ledger_field.dart';
 import '../widgets/selector_chip.dart';
 
-// Los 4 tipos "principales" que el usuario elige primero.
-// "Ingreso" se abre en un segundo selector (Bs / USD).
 enum MovementType { income, buy, saving, spent }
 
 enum IncomeCurrency { bs, usd }
@@ -31,8 +29,6 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
 
   DateTime _selectedDate = DateTime.now();
 
-  // Cuentas de ejemplo por ahora — cuando conectemos Supabase, esto
-  // va a venir de una consulta a la tabla Account del usuario.
   final _accounts = const ['General', 'Viaje', 'Casa', 'Emergencia'];
   String? _selectedAccount;
 
@@ -48,8 +44,6 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
     super.dispose();
   }
 
-  // Calcula en vivo cuántos Bs se llevó una compra, a medida que el
-  // usuario escribe el monto en $ y la tasa. Solo aplica a "Compra $".
   double? get _calculatedBs {
     final dollars = double.tryParse(_amountController.text.replaceAll(',', '.'));
     final rate = double.tryParse(_rateController.text.replaceAll(',', '.'));
@@ -162,8 +156,6 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
     );
   }
 
-  // El corazón de la pantalla: qué campos mostrar según el tipo
-  // (y sub-tipo) elegido. Devuelve una lista de widgets ya espaciados.
   List<Widget> _buildFieldsForType() {
     switch (_type) {
       case MovementType.income:

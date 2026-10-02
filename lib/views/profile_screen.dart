@@ -27,8 +27,6 @@ class _ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // context.watch hace que este widget se reconstruya automáticamente
-    // cada vez que el controller llama a notifyListeners().
     final controller = context.watch<ProfileController>();
     final profile = controller.profile;
 

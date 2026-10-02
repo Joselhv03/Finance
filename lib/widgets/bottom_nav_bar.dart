@@ -10,11 +10,7 @@ class BottomNavBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onItemSelected,
   });
-
-  // Un ícono por pestaña. Usamos la versión "outlined" para el
-  // estado normal y la versión rellena para el estado seleccionado,
-  // un patrón común en apps de Material Design para reforzar
-  // visualmente cuál pestaña está activa sin necesidad de texto.
+  
   static const _icons = [
     (outlined: Icons.home_outlined, filled: Icons.home),
     (outlined: Icons.account_balance_wallet_outlined, filled: Icons.account_balance_wallet),

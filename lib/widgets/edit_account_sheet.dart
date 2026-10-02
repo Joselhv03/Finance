@@ -4,9 +4,6 @@ import '../app_colors.dart';
 import 'create_account_sheet.dart' show accountColorPalette;
 import 'ledger_field.dart';
 
-// Lo que devuelve esta hoja al terminar de editar. A propósito NO
-// incluye el monto — ese campo no se edita a mano una vez que la
-// cuenta existe, solo cambia por movimientos reales (ahorros/egresos).
 class EditAccountData {
   final String name;
   final double? targetAmount;

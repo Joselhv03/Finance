@@ -2,13 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app_colors.dart';
 
-// ─────────────────────────────────────────────────────────
-// Este widget antes vivía dentro de login.dart como "_LedgerField"
-// (con guión bajo = privado a ese archivo). Al quitarle el guión
-// bajo y moverlo a widgets/, cualquier pantalla puede importarlo
-// y reutilizarlo. Esta es la carpeta "widgets/" de la que hablamos
-// en la estructura MVC.
-// ─────────────────────────────────────────────────────────
 class LedgerField extends StatelessWidget {
   final String label;
   final TextEditingController controller;

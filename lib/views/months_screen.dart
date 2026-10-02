@@ -20,8 +20,6 @@ class MonthsScreen extends StatefulWidget {
 }
 
 class _MonthsScreenState extends State<MonthsScreen> {
-  // Arranca en el mes actual del teléfono, como pediste. Solo
-  // guardamos año y mes (el día siempre queda en 1, no importa).
   late DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
   void _goToPreviousMonth() {
@@ -107,8 +105,6 @@ class _MonthsScreenState extends State<MonthsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Resumen rápido del mes: 3 tarjetas, una por tipo de
-          // total. Datos de ejemplo — vendrán de la tabla Month.
           const LedgerCard(
             label: 'Ingresos del mes',
             amount: '27.432,55',

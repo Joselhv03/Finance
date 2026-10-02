@@ -32,8 +32,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleRegister() async {
-    // Validación simple: comparamos el texto de los dos controllers
-    // ANTES de mostrar el loading o llamar a Supabase.
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
