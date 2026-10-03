@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Models/user_profile.dart';
 import '../Models/account.dart';
+import '../Models/income_bs.dart';
 
+// Esta clase es la única parte de tu app que "sabe" cómo hablar con
+// Supabase Auth.
 class SupabaseService {
   final _client = Supabase.instance.client;
 
@@ -35,10 +38,6 @@ class SupabaseService {
   // Útil para saber, en cualquier pantalla, si ya hay una sesión activa.
   User? get currentUser => _client.auth.currentUser;
 
-  // Lee los datos actuales del usuario logueado y los devuelve ya
-  // como UserProfile (el Model), no como el tipo crudo de Supabase.
-  // Esto es justo la frontera entre Service y Model: aquí es donde
-  // se "traduce" la respuesta de Supabase a tu propia forma de datos.
   UserProfile getCurrentProfile() {
     final user = _client.auth.currentUser;
     return UserProfile(
@@ -120,5 +119,60 @@ class SupabaseService {
 
   Future<void> deleteAccount(String accountId) async {
     await _client.from('Account').delete().eq('id', accountId);
+  }
+
+  // ── Meses ──────────────────────────────────────────────────
+
+  static const _monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  String monthNameFor(DateTime date) => '${_monthNames[date.month - 1]} ${date.year}';
+
+  // Busca el Month del usuario actual para la fecha dada; si no
+  // existe, lo crea con los montos en 0 y devuelve su id. Cualquier
+  // Controller que vaya a guardar un ingreso/compra/movimiento/egreso
+  // llama esto PRIMERO para saber a qué month_id apuntar.
+  Future<String> getOrCreateMonthId(DateTime date) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('No hay un usuario logueado');
+
+    final name = monthNameFor(date);
+
+    final existing = await _client
+        .from('Month')
+        .select('id')
+        .eq('user_ID', userId)
+        .eq('name', name)
+        .maybeSingle();
+
+    if (existing != null) {
+      return existing['id'].toString();
+    }
+
+    final created = await _client
+        .from('Month')
+        .insert({
+          'user_ID': userId,
+          'name': name,
+          'income_total': 0,
+          'expense': 0,
+          'total_saving': 0,
+        })
+        .select('id')
+        .single();
+
+    return created['id'].toString();
+  
+}
+
+  Future<void> createIncomeBs(IncomeBs income) async {
+    final monthId = await getOrCreateMonthId(income.date);
+ 
+    await _client.from('Income_bs').insert({
+      ...income.toInsertJson(),
+      'month_id': monthId,
+    });
   }
 }
