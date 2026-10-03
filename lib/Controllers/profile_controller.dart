@@ -2,12 +2,6 @@ import 'package:flutter/foundation.dart';
 import '../Models/user_profile.dart';
 import '../services/supabase_service.dart';
 
-// ChangeNotifier es la clase base de Flutter para "algo que puede
-// avisar cuando cambió". Cuando llamamos notifyListeners(), todas
-// las pantallas que estén "escuchando" este controller (con
-// Provider, como vamos a ver en profile_screen.dart) se redibujan
-// solas — así la vista nunca llama a setState() directamente para
-// estos datos, solo reacciona a lo que el controller le informa.
 class ProfileController extends ChangeNotifier {
   final _authService = SupabaseService();
 

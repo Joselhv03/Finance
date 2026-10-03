@@ -1,90 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../app_colors.dart';
+import '../Models/account.dart';
+import '../Controllers/accounts_controller.dart';
 import '../widgets/expandable_account_card.dart';
 import '../widgets/create_account_sheet.dart';
 import '../widgets/edit_account_sheet.dart';
 
-// Modelo simple en memoria para esta pantalla. Cuando conectemos
-// Supabase, esto se reemplaza por tu modelo real de la tabla Account.
-class _AccountItem {
-  final String name;
-  final double total;
-  final double? target;
-  final Color color;
-
-  _AccountItem({
-    required this.name,
-    required this.total,
-    required this.color,
-    this.target,
-  });
-}
-
-class AccountsScreen extends StatefulWidget {
+class AccountsScreen extends StatelessWidget {
   const AccountsScreen({super.key});
 
   @override
-  State<AccountsScreen> createState() => _AccountsScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => AccountsController()..loadAccounts(),
+      child: const _AccountsView(),
+    );
+  }
 }
 
-class _AccountsScreenState extends State<AccountsScreen> {
-  // Datos de ejemplo, igual que en resumen_screen.dart. Cuando
-  // conectemos el backend, esto viene de una consulta a Account.
-  final List<_AccountItem> _accounts = [
-    _AccountItem(name: 'General', total: 240.00, color: AppColors.usd),
-    _AccountItem(
-      name: 'Viaje',
-      total: 180.50,
-      target: 600,
-      color: accountColorPalette[3], // rosa
-    ),
-    _AccountItem(name: 'Casa', total: 610.00, color: AppColors.bs),
-    _AccountItem(
-      name: 'Emergencia',
-      total: 95.00,
-      target: 300,
-      color: accountColorPalette[2], // menta
-    ),
-  ];
+class _AccountsView extends StatelessWidget {
+  const _AccountsView();
 
-  Future<void> _handleCreateAccount() async {
+  Future<void> _handleCreateAccount(BuildContext context, AccountsController controller) async {
     final result = await showCreateAccountSheet(context);
-    if (result != null) {
-      setState(() {
-        _accounts.add(
-          _AccountItem(
-            name: result.name,
-            total: result.initialAmount,
-            target: result.targetAmount,
-            color: result.color,
-          ),
-        );
-      });
+    if (result == null) return;
+
+    final success = await controller.createAccount(
+      name: result.name,
+      initialAmount: result.initialAmount,
+      targetAmount: result.targetAmount,
+      color: result.color,
+    );
+
+    if (!success && context.mounted) {
+      _showErrorSnackBar(context, controller.errorMessage);
     }
   }
 
-  // EditAccountData no trae 'total' (no se edita a mano), así que
-  // reconstruimos el _AccountItem conservando el total que ya tenía.
-  void _handleEditAccount(int index, EditAccountData data) {
-    setState(() {
-      _accounts[index] = _AccountItem(
-        name: data.name,
-        total: _accounts[index].total,
-        target: data.targetAmount,
-        color: data.color,
-      );
-    });
+  Future<void> _handleEditAccount(
+    BuildContext context,
+    AccountsController controller,
+    Account account,
+    EditAccountData data,
+  ) async {
+    final updated = Account(
+      id: account.id,
+      name: data.name,
+      total: account.total, // el total no se edita a mano
+      targetAmount: data.targetAmount,
+      color: data.color,
+    );
+    final success = await controller.updateAccount(updated);
+    if (!success && context.mounted) {
+      _showErrorSnackBar(context, controller.errorMessage);
+    }
   }
 
-  void _handleDeleteAccount(int index) {
-    setState(() {
-      _accounts.removeAt(index);
-    });
+  Future<void> _handleDeleteAccount(
+    BuildContext context,
+    AccountsController controller,
+    String accountId,
+  ) async {
+    final success = await controller.deleteAccount(accountId);
+    if (!success && context.mounted) {
+      _showErrorSnackBar(context, controller.errorMessage);
+    }
+  }
+
+  // Este SÍ es seguro como SnackBar normal: esta pantalla no es una
+  // hoja modal, es la pantalla de fondo, así que el SnackBar se ve
+  // sin que nada lo tape.
+  void _showErrorSnackBar(BuildContext context, String? message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message ?? 'Ocurrió un error, intenta de nuevo',
+          style: GoogleFonts.ibmPlexSans(),
+        ),
+        backgroundColor: AppColors.danger,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<AccountsController>();
+
     return Scaffold(
       backgroundColor: AppColors.ink,
       body: SafeArea(
@@ -104,22 +107,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   ),
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _accounts.length,
-                  itemBuilder: (context, index) {
-                    final account = _accounts[index];
-                    return ExpandableAccountCard(
-                      name: account.name,
-                      total: account.total,
-                      target: account.target,
-                      color: account.color,
-                      onEdit: (data) => _handleEditAccount(index, data),
-                      onDelete: () => _handleDeleteAccount(index),
-                    );
-                  },
-                ),
-              ),
+              Expanded(child: _buildBody(controller)),
             ],
           ),
         ),
@@ -128,8 +116,36 @@ class _AccountsScreenState extends State<AccountsScreen> {
         backgroundColor: AppColors.usd,
         foregroundColor: AppColors.ink,
         elevation: 0,
-        onPressed: _handleCreateAccount,
+        onPressed: () => _handleCreateAccount(context, controller),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildBody(AccountsController controller) {
+    if (controller.loading && controller.accounts.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.usd),
+      );
+    }
+
+    // El estado vacío real (sin ninguna cuenta) lo dejamos pendiente
+    // a propósito, como quedó acordado — por ahora solo una lista
+    // vacía si no hay cuentas.
+    return Builder(
+      builder: (context) => ListView.builder(
+        itemCount: controller.accounts.length,
+        itemBuilder: (context, index) {
+          final account = controller.accounts[index];
+          return ExpandableAccountCard(
+            name: account.name,
+            total: account.total,
+            target: account.targetAmount,
+            color: account.color,
+            onEdit: (data) => _handleEditAccount(context, controller, account, data),
+            onDelete: () => _handleDeleteAccount(context, controller, account.id),
+          );
+        },
       ),
     );
   }

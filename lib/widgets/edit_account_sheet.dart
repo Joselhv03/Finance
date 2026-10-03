@@ -58,6 +58,7 @@ class _EditAccountSheetContentState extends State<_EditAccountSheetContent> {
     text: widget.initialTarget != null ? widget.initialTarget!.toStringAsFixed(2) : '',
   );
   late Color _selectedColor = widget.initialColor;
+  String? _errorText;
 
   @override
   void dispose() {
@@ -67,17 +68,19 @@ class _EditAccountSheetContentState extends State<_EditAccountSheetContent> {
   }
 
   void _handleSave() {
+    setState(() => _errorText = null);
+
     final name = _nameController.text.trim();
     final targetText = _targetController.text.trim();
     final targetAmount =
         targetText.isEmpty ? null : double.tryParse(targetText.replaceAll(',', '.'));
 
     if (name.isEmpty) {
-      _showError('Ponle un nombre a la cuenta');
+      setState(() => _errorText = 'Ponle un nombre a la cuenta');
       return;
     }
     if (targetText.isNotEmpty && (targetAmount == null || targetAmount <= 0)) {
-      _showError('El monto objetivo debe ser un número mayor a 0');
+      setState(() => _errorText = 'El monto objetivo debe ser un número mayor a 0');
       return;
     }
 
@@ -87,20 +90,11 @@ class _EditAccountSheetContentState extends State<_EditAccountSheetContent> {
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.ibmPlexSans()),
-        backgroundColor: AppColors.danger,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -143,6 +137,14 @@ class _EditAccountSheetContentState extends State<_EditAccountSheetContent> {
             ),
             const SizedBox(height: 10),
             _buildColorPicker(),
+
+            if (_errorText != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _errorText!,
+                style: GoogleFonts.ibmPlexSans(fontSize: 12, color: AppColors.danger),
+              ),
+            ],
             const SizedBox(height: 28),
 
             SizedBox(

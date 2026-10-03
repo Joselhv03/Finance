@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../app_colors.dart';
-import '../Controller/profile_controller.dart';
+import '../Controllers/profile_controller.dart';
 import '../widgets/ledger_field.dart';
 import '../services/supabase_service.dart';
 import 'login.dart';
@@ -27,6 +27,8 @@ class _ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // context.watch hace que este widget se reconstruya automáticamente
+    // cada vez que el controller llama a notifyListeners().
     final controller = context.watch<ProfileController>();
     final profile = controller.profile;
 
@@ -158,48 +160,65 @@ class _ProfileView extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Editar nombre de usuario',
-                style: GoogleFonts.newsreader(fontSize: 20, color: AppColors.text),
+        // StatefulBuilder nos da un setState LOCAL a este builder, sin
+        // tener que convertir todo este método en su propia clase
+        // StatefulWidget solo para guardar un texto de error.
+        String? errorText;
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-              const SizedBox(height: 20),
-              LedgerField(label: 'Nombre de usuario', controller: nameController),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final newName = nameController.text.trim();
-                    if (newName.isEmpty) return;
-                    final success = await controller.updateUsername(newName);
-                    if (sheetContext.mounted && success) {
-                      Navigator.pop(sheetContext);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.usd,
-                    foregroundColor: AppColors.ink,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                  child: Text('Guardar', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w500)),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Editar nombre de usuario',
+                      style: GoogleFonts.newsreader(fontSize: 20, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 20),
+                    LedgerField(label: 'Nombre de usuario', controller: nameController),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        errorText!,
+                        style: GoogleFonts.ibmPlexSans(fontSize: 12, color: AppColors.danger),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final newName = nameController.text.trim();
+                          if (newName.isEmpty) {
+                            setSheetState(() => errorText = 'Ponle un nombre de usuario');
+                            return;
+                          }
+                          final success = await controller.updateUsername(newName);
+                          if (sheetContext.mounted && success) {
+                            Navigator.pop(sheetContext);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.usd,
+                          foregroundColor: AppColors.ink,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                        ),
+                        child: Text('Guardar', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -217,80 +236,76 @@ class _ProfileView extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Cambiar contraseña',
-                style: GoogleFonts.newsreader(fontSize: 20, color: AppColors.text),
+        String? errorText;
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-              const SizedBox(height: 20),
-              LedgerField(
-                label: 'Nueva contraseña',
-                controller: passwordController,
-                obscureText: true,
-              ),
-              const SizedBox(height: 22),
-              LedgerField(
-                label: 'Confirmar contraseña',
-                controller: confirmController,
-                obscureText: true,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (passwordController.text.length < 6) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'La contraseña debe tener al menos 6 caracteres',
-                            style: GoogleFonts.ibmPlexSans(),
-                          ),
-                          backgroundColor: AppColors.danger,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cambiar contraseña',
+                      style: GoogleFonts.newsreader(fontSize: 20, color: AppColors.text),
+                    ),
+                    const SizedBox(height: 20),
+                    LedgerField(
+                      label: 'Nueva contraseña',
+                      controller: passwordController,
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 22),
+                    LedgerField(
+                      label: 'Confirmar contraseña',
+                      controller: confirmController,
+                      obscureText: true,
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        errorText!,
+                        style: GoogleFonts.ibmPlexSans(fontSize: 12, color: AppColors.danger),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (passwordController.text.length < 6) {
+                            setSheetState(() =>
+                                errorText = 'La contraseña debe tener al menos 6 caracteres');
+                            return;
+                          }
+                          if (passwordController.text != confirmController.text) {
+                            setSheetState(() => errorText = 'Las contraseñas no coinciden');
+                            return;
+                          }
+                          final success = await controller.updatePassword(passwordController.text);
+                          if (sheetContext.mounted && success) {
+                            Navigator.pop(sheetContext);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.usd,
+                          foregroundColor: AppColors.ink,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
                         ),
-                      );
-                      return;
-                    }
-                    if (passwordController.text != confirmController.text) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Las contraseñas no coinciden',
-                            style: GoogleFonts.ibmPlexSans(),
-                          ),
-                          backgroundColor: AppColors.danger,
-                        ),
-                      );
-                      return;
-                    }
-                    final success = await controller.updatePassword(passwordController.text);
-                    if (sheetContext.mounted && success) {
-                      Navigator.pop(sheetContext);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.usd,
-                    foregroundColor: AppColors.ink,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                  child: Text('Guardar', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w500)),
+                        child: Text('Guardar', style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            );
+          },
         );
       },
     );

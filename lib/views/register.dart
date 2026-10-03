@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../app_colors.dart';
 import '../widgets/ledger_field.dart';
 import '../services/supabase_service.dart';
+import 'login.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -32,6 +33,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleRegister() async {
+    // Validación simple: comparamos el texto de los dos controllers
+    // ANTES de mostrar el loading o llamar a Supabase.
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -55,7 +58,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
         username: _userNameController.text.trim(),
       );
-      
+      // Si llega aquí, el registro fue exitoso. Como desactivamos la
+      // confirmación por correo, Supabase deja la sesión ya iniciada
+      // automáticamente — como pediste volver al login, cerramos esa
+      // sesión a propósito antes de navegar, para forzar el login manual.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Registro exitoso',
+              style: GoogleFonts.ibmPlexSans(),
+            ),
+            backgroundColor: AppColors.usd,
+          ),
+        );
+      }
+      await _authService.signOut();
+      // Una pequeña pausa para que el SnackBar alcance a verse antes
+      // de que la pantalla cambie — si navegamos de inmediato, se
+      // corta junto con register.dart al desaparecer de la pila.
+      await Future.delayed(const Duration(milliseconds: 900));
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

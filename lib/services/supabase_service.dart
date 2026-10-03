@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Models/user_profile.dart';
+import '../Models/account.dart';
 
 class SupabaseService {
   final _client = Supabase.instance.client;
@@ -55,5 +57,68 @@ class SupabaseService {
     await _client.auth.updateUser(
       UserAttributes(password: newPassword),
     );
+  }
+
+  // ── Cuentas de ahorro ──────────────────────────────────────
+  // Si tu tabla o columnas tienen mayúsculas distintas a estas
+  // (ej. "Account" en vez de "account", o "user_ID" en vez de
+  // "user_id"), ajusta los strings de abajo para que coincidan
+  // EXACTAMENTE con lo que ves en el Table Editor de Supabase.
+
+  Future<List<Account>> fetchAccounts() async {
+    final userId = currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await _client
+        .from('Account')
+        .select()
+        .eq('user_ID', userId)
+        .order('id');
+
+    return (response as List)
+        .map((row) => Account.fromJson(row as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Account> createAccount({
+    required String name,
+    required double initialAmount,
+    required double? targetAmount,
+    required Color color,
+  }) async {
+    final userId = currentUser?.id;
+    if (userId == null) {
+      throw Exception('No hay un usuario logueado');
+    }
+
+    final newAccount = Account(
+      id: '', // se ignora al insertar; Supabase genera el id real
+      name: name,
+      total: initialAmount,
+      targetAmount: targetAmount,
+      color: color,
+    );
+
+    final response = await _client
+        .from('Account')
+        .insert({
+          ...newAccount.toInsertJson(),
+          'user_ID': userId,
+        })
+        .select()
+        .single();
+
+    return Account.fromJson(response);
+  }
+
+  Future<void> updateAccount(Account account) async {
+    await _client
+        .from('Account')
+        .update(account.toInsertJson())
+        .eq('id', account.id);
+  }
+
+  Future<void> deleteAccount(String accountId) async {
+    await _client.from('Account').delete().eq('id', accountId);
   }
 }
