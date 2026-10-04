@@ -8,6 +8,7 @@ class LedgerField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final Widget? suffix;
+  final ValueChanged<String>? onChanged;
 
   const LedgerField({
     super.key,
@@ -16,6 +17,7 @@ class LedgerField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.suffix,
+    this.onChanged,
   });
 
   @override
@@ -35,6 +37,7 @@ class LedgerField extends StatelessWidget {
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          onChanged: onChanged,
           style: GoogleFonts.newsreader(
             fontSize: 20,
             color: AppColors.text,

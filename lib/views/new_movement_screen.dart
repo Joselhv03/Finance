@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../app_colors.dart';
 import '../Models/income_bs.dart';
 import '../Models/income_dollars.dart';
+import '../Models/buy.dart';
 import '../Controllers/new_movement_controller.dart';
 import '../widgets/ledger_field.dart';
 import '../widgets/selector_chip.dart';
@@ -14,9 +15,6 @@ enum MovementType { ingreso, compra, ahorro, egreso }
 
 enum IncomeCurrency { bs, usd }
 
-// Mismo patrón que AccountsScreen/ProfileScreen: esta clase solo
-// crea el controller y lo expone con Provider; _NewMovementView
-// hace el trabajo real de la pantalla.
 class NewMovementScreen extends StatelessWidget {
   const NewMovementScreen({super.key});
 
@@ -92,9 +90,6 @@ class _NewMovementViewState extends State<_NewMovementView> {
   Future<void> _handleSubmit() async {
     final controller = context.read<NewMovementController>();
 
-    // Por ahora solo "Ingreso" + "Bolívares" está conectado de
-    // verdad a Supabase. Los demás tipos siguen con la simulación
-    // mientras los vamos conectando uno por uno.
     if (_type == MovementType.ingreso && _ingresoCurrency == IncomeCurrency.bs) {
       final concept = _conceptController.text.trim();
       final amount = double.tryParse(_amountController.text.replaceAll(',', '.'));
@@ -147,7 +142,41 @@ class _NewMovementViewState extends State<_NewMovementView> {
       return;
     }
 
-    // ── Simulación temporal para los tipos todavía no conectados.
+    if (_type == MovementType.compra) {
+      final dollarAmount = double.tryParse(_amountController.text.replaceAll(',', '.'));
+      final rate = double.tryParse(_rateController.text.replaceAll(',', '.'));
+      final seller = _sellerController.text.trim();
+
+      if (dollarAmount == null || dollarAmount <= 0) {
+        _showError('El monto en dólares debe ser un número mayor a 0');
+        return;
+      }
+      if (rate == null || rate <= 0) {
+        _showError('La tasa debe ser un número mayor a 0');
+        return;
+      }
+
+      final success = await controller.submitBuy(
+        Buy(
+          dollarAmount: dollarAmount,
+          rate: rate,
+          bsAmount: dollarAmount * rate,
+          seller: seller.isEmpty ? null : seller,
+          date: _selectedDate,
+        ),
+      );
+
+      if (!mounted) return;
+      if (success) {
+        Navigator.pop(context);
+      } else {
+        _showError(controller.errorMessage ?? 'Ocurrió un error, intenta de nuevo');
+      }
+      return;
+    }
+
+    // ── Simulación temporal para los tipos todavía no conectados
+    // (Ahorro, Egreso).
     setState(() {});
     await Future.delayed(const Duration(milliseconds: 600));
   }
@@ -267,12 +296,16 @@ class _NewMovementViewState extends State<_NewMovementView> {
             label: 'Monto en dólares',
             controller: _amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            // El onChanged es lo que faltaba: sin esto, Flutter nunca
+            // se enteraba de que debía recalcular el total en vivo.
+            onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 22),
           LedgerField(
             label: 'Tasa de cambio',
             controller: _rateController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 22),
           LedgerField(

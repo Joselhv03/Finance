@@ -206,6 +206,16 @@ class SupabaseService {
     // hicimos) debe sumar a Month.total_saving.
   }
 
+  Future<void> createBuy(Buy buy) async {
+    final monthId = await getOrCreateMonthId(buy.date);
+ 
+    await _client.from('Buy').insert({
+      ...buy.toInsertJson(),
+      'month_ID': monthId,
+    });
+    // trg_buy_affect_month suma a total_saving y resta de expense.
+  }
+
   // Busca el Month del usuario actual para ese año/mes, SIN crearlo
   // si no existe (a diferencia de getOrCreateMonthId). Devuelve null
   // cuando ese mes todavía no tiene ningún movimiento registrado.

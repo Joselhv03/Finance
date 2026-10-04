@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../Models/income_bs.dart';
 import '../Models/income_dollars.dart';
+import '../Models/buy.dart';
 import '../services/supabase_service.dart';
 import 'app_refresh_signal.dart';
 
@@ -18,8 +19,12 @@ class NewMovementController extends ChangeNotifier {
     return _runAction(() => _service.createIncomeDollars(income));
   }
 
-  // Los demás tipos (Compra, Ahorro, Egreso) se agregan aquí mismo
-  // más adelante, siguiendo este mismo patrón.
+  Future<bool> submitBuy(Buy buy) async {
+    return _runAction(() => _service.createBuy(buy));
+  }
+
+  // Los demás tipos (Ahorro, Egreso) se agregan aquí mismo más
+  // adelante, siguiendo este mismo patrón.
 
   Future<bool> _runAction(Future<void> Function() action) async {
     loading = true;

@@ -22,4 +22,14 @@ class Buy {
       date: DateTime.parse(json['date'] as String),
     );
   }
+
+  Map<String, dynamic> toInsertJson() {
+    return {
+      'dollar_amount': dollarAmount,
+      'rate': rate,
+      'bs_amount': bsAmount,
+      'seller': seller,
+      'date': date.toIso8601String(),
+    };
+  }
 }
