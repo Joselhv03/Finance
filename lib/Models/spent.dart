@@ -1,10 +1,12 @@
 class Spent {
+  final String id;
   final double dollarAmount;
   final String accountId;
   final String description;
   final DateTime date;
 
   const Spent({
+    this.id = '',
     required this.dollarAmount,
     required this.accountId,
     required this.description,
@@ -13,6 +15,7 @@ class Spent {
 
   factory Spent.fromJson(Map<String, dynamic> json) {
     return Spent(
+      id: json['id'].toString(),
       dollarAmount: (json['dollar_amount'] as num).toDouble(),
       accountId: json['account_ID'].toString(),
       description: json['description'] as String? ?? '',

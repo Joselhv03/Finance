@@ -91,4 +91,29 @@ class MonthsController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // ── Borrado ──────────────────────────────────────────────────
+  // Todas comparten el mismo patrón: borran, avisan a la señal
+  // global (que a su vez dispara _handleExternalRefresh y recarga
+  // este mismo mes), y devuelven true/false para que la vista sepa
+  // si mostrar un error.
+
+  Future<bool> _deleteAndRefresh(Future<void> Function() action) async {
+    try {
+      await action();
+      AppRefreshSignal.instance.notifyMovementSaved();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteIncomeBs(String id) => _deleteAndRefresh(() => _service.deleteIncomeBs(id));
+  Future<bool> deleteIncomeDollars(String id) =>
+      _deleteAndRefresh(() => _service.deleteIncomeDollars(id));
+  Future<bool> deleteBuy(String id) => _deleteAndRefresh(() => _service.deleteBuy(id));
+  Future<bool> deleteMovement(String id) => _deleteAndRefresh(() => _service.deleteMovement(id));
+  Future<bool> deleteSpent(String id) => _deleteAndRefresh(() => _service.deleteSpent(id));
 }

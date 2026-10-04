@@ -52,12 +52,14 @@ class ResumenController extends ChangeNotifier {
       final now = DateTime.now();
       final month = await _service.fetchMonth(now.year, now.month);
 
+      // "Por distribuir" ya no depende de si el mes actual tiene
+      // datos: se pide siempre, porque puede arrastrar pendientes de
+      // meses anteriores.
+      pendingToDistribute = await _service.fetchTotalPendingToDistribute();
+
       if (month == null) {
-        // Todavía no hay ningún movimiento este mes: todo en 0, sin
-        // necesidad de pedir las 5 listas (estarían vacías igual).
         incomeTotal = 0;
         totalSaving = 0;
-        pendingToDistribute = 0;
         recentMovements = [];
       } else {
         incomeTotal = month.incomeTotal;
@@ -80,15 +82,6 @@ class ResumenController extends ChangeNotifier {
         final accounts = results[5] as List;
 
         final accountNames = {for (final a in accounts) a.id as String: a.name as String};
-
-        // "Por distribuir" calculado en código, NO guardado — mismo
-        // principio que usamos para Month.total_saving: es una resta
-        // sobre datos que ya existen, nunca un contador aparte.
-        final distributed = movements.fold<double>(
-          0,
-          (sum, m) => sum + (m.dollarAmount as double),
-        );
-        pendingToDistribute = totalSaving - distributed;
 
         final items = <RecentMovementItem>[
           for (final i in incomesBs)

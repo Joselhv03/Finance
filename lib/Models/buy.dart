@@ -1,4 +1,5 @@
 class Buy {
+  final String id;
   final double dollarAmount;
   final double rate;
   final double bsAmount;
@@ -6,6 +7,7 @@ class Buy {
   final DateTime date;
 
   const Buy({
+    this.id = '',
     required this.dollarAmount,
     required this.rate,
     required this.bsAmount,
@@ -15,6 +17,7 @@ class Buy {
 
   factory Buy.fromJson(Map<String, dynamic> json) {
     return Buy(
+      id: json['id'].toString(),
       dollarAmount: (json['dollar_amount'] as num).toDouble(),
       rate: (json['rate'] as num).toDouble(),
       bsAmount: (json['bs_amount'] as num).toDouble(),

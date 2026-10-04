@@ -255,6 +255,27 @@ class SupabaseService {
     return row != null ? Month.fromJson(row) : null;
   }
 
+  // Suma TODOS los meses del usuario (no solo el actual), porque lo
+  // "pendiente por distribuir" se arrastra entre meses hasta que
+  // efectivamente lo mueves a una cuenta. No filtramos manualmente
+  // por usuario aquí: las políticas RLS de "Month" y "Movement" ya
+  // garantizan que solo veamos nuestras propias filas.
+  Future<double> fetchTotalPendingToDistribute() async {
+    final monthsRows = await _client.from('Month').select('total_saving');
+    final totalSaving = (monthsRows as List).fold<double>(
+      0,
+      (sum, m) => sum + ((m['total_saving'] as num?)?.toDouble() ?? 0),
+    );
+ 
+    final movementsRows = await _client.from('Movement').select('dollar_amount');
+    final totalDistributed = (movementsRows as List).fold<double>(
+      0,
+      (sum, r) => sum + ((r['dollar_amount'] as num?)?.toDouble() ?? 0),
+    );
+ 
+    return totalSaving - totalDistributed;
+  }
+ 
   Future<List<IncomeBs>> fetchIncomeBsForMonth(String monthId) async {
     final rows = await _client
         .from('Income_bs')
@@ -263,7 +284,7 @@ class SupabaseService {
         .order('date');
     return (rows as List).map((r) => IncomeBs.fromJson(r)).toList();
   }
-
+ 
   Future<List<IncomeDollars>> fetchIncomeDollarsForMonth(String monthId) async {
     final rows = await _client
         .from('Income_dollars')
@@ -272,7 +293,7 @@ class SupabaseService {
         .order('date');
     return (rows as List).map((r) => IncomeDollars.fromJson(r)).toList();
   }
-
+ 
   Future<List<Buy>> fetchBuysForMonth(String monthId) async {
     final rows = await _client
         .from('Buy')
@@ -281,7 +302,7 @@ class SupabaseService {
         .order('date');
     return (rows as List).map((r) => Buy.fromJson(r)).toList();
   }
-
+ 
   Future<List<Movement>> fetchMovementsForMonth(String monthId) async {
     final rows = await _client
         .from('Movement')
@@ -290,7 +311,7 @@ class SupabaseService {
         .order('date');
     return (rows as List).map((r) => Movement.fromJson(r)).toList();
   }
-
+ 
   Future<List<Spent>> fetchSpentsForMonth(String monthId) async {
     final rows = await _client
         .from('Spent')
@@ -298,5 +319,30 @@ class SupabaseService {
         .eq('month_ID', monthId)
         .order('date');
     return (rows as List).map((r) => Spent.fromJson(r)).toList();
+  }
+ 
+  // ── Borrado de movimientos ─────────────────────────────────
+  // No hace falta revertir manualmente los totales: los triggers
+  // de DELETE que ya escribimos se encargan de deshacer el efecto
+  // apenas la fila desaparece.
+ 
+  Future<void> deleteIncomeBs(String id) async {
+    await _client.from('Income_bs').delete().eq('id', id);
+  }
+ 
+  Future<void> deleteIncomeDollars(String id) async {
+    await _client.from('Income_dollars').delete().eq('id', id);
+  }
+ 
+  Future<void> deleteBuy(String id) async {
+    await _client.from('Buy').delete().eq('id', id);
+  }
+ 
+  Future<void> deleteMovement(String id) async {
+    await _client.from('Movement').delete().eq('id', id);
+  }
+ 
+  Future<void> deleteSpent(String id) async {
+    await _client.from('Spent').delete().eq('id', id);
   }
 }

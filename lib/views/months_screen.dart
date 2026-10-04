@@ -162,6 +162,12 @@ class _MonthsViewState extends State<_MonthsView> {
                 dateLabel: _formatDay(income.date),
                 amount: '${income.amount.toStringAsFixed(2)} Bs',
                 amountColor: AppColors.bs,
+                onDelete: () => _confirmAndDelete(
+                  context,
+                  controller,
+                  income.concept,
+                  () => controller.deleteIncomeBs(income.id),
+                ),
               ),
           ],
 
@@ -173,6 +179,12 @@ class _MonthsViewState extends State<_MonthsView> {
                 dateLabel: _formatDay(income.date),
                 amount: '${income.amount.toStringAsFixed(2)} \$',
                 amountColor: AppColors.usd,
+                onDelete: () => _confirmAndDelete(
+                  context,
+                  controller,
+                  income.concept,
+                  () => controller.deleteIncomeDollars(income.id),
+                ),
               ),
           ],
 
@@ -184,6 +196,12 @@ class _MonthsViewState extends State<_MonthsView> {
                 dateLabel: _formatDay(buy.date),
                 amount: '${buy.dollarAmount.toStringAsFixed(2)} \$',
                 amountColor: AppColors.usd,
+                onDelete: () => _confirmAndDelete(
+                  context,
+                  controller,
+                  'esta compra',
+                  () => controller.deleteBuy(buy.id),
+                ),
               ),
           ],
 
@@ -195,6 +213,12 @@ class _MonthsViewState extends State<_MonthsView> {
                 dateLabel: _formatDay(movement.date),
                 amount: '${movement.dollarAmount.toStringAsFixed(2)} \$',
                 amountColor: AppColors.usd,
+                onDelete: () => _confirmAndDelete(
+                  context,
+                  controller,
+                  'este ahorro',
+                  () => controller.deleteMovement(movement.id),
+                ),
               ),
           ],
 
@@ -207,6 +231,12 @@ class _MonthsViewState extends State<_MonthsView> {
                 dateLabel: _formatDay(spent.date),
                 amount: '${spent.dollarAmount.toStringAsFixed(2)} \$',
                 amountColor: AppColors.danger,
+                onDelete: () => _confirmAndDelete(
+                  context,
+                  controller,
+                  spent.description,
+                  () => controller.deleteSpent(spent.id),
+                ),
               ),
           ],
 
@@ -214,6 +244,59 @@ class _MonthsViewState extends State<_MonthsView> {
         ],
       ),
     );
+  }
+
+  // Mismo patrón de confirmación que ya usamos para eliminar una
+  // cuenta de ahorro: un AlertDialog nativo, y solo si el usuario
+  // confirma se ejecuta el borrado real.
+  Future<void> _confirmAndDelete(
+    BuildContext context,
+    MonthsController controller,
+    String description,
+    Future<bool> Function() deleteAction,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(
+          'Eliminar movimiento',
+          style: GoogleFonts.newsreader(fontSize: 18, color: AppColors.text),
+        ),
+        content: Text(
+          '¿Seguro que quieres eliminar "$description"? Esta acción no se puede deshacer.',
+          style: GoogleFonts.ibmPlexSans(fontSize: 13, color: AppColors.textDim),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('Cancelar', style: GoogleFonts.ibmPlexSans(color: AppColors.textDim)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.ibmPlexSans(color: AppColors.danger, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final success = await deleteAction();
+    if (!success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            controller.errorMessage ?? 'No se pudo eliminar, intenta de nuevo',
+            style: GoogleFonts.ibmPlexSans(),
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   Widget _buildSectionLabel(String text) {
