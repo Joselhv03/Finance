@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../app_colors.dart';
 import '../widgets/ledger_card.dart';
 import '../widgets/movement_row.dart';
-import "new_movement_screen.dart";
+import 'new_movement_screen.dart';
 
 class ResumenScreen extends StatelessWidget {
   const ResumenScreen({super.key});
@@ -68,8 +68,6 @@ class ResumenScreen extends StatelessWidget {
                         amount: '+13.716,00 Bs',
                         amountColor: AppColors.bs,
                       ),
-                      // Espacio extra abajo para que el FAB no tape
-                      // la última fila al hacer scroll.
                       const SizedBox(height: 90),
                     ],
                   ),
@@ -80,11 +78,15 @@ class ResumenScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'resumen_fab',
         backgroundColor: AppColors.usd,
         foregroundColor: AppColors.ink,
         elevation: 0,
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const NewMovementScreen()));
+          Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const NewMovementScreen()),
+          );
         },
         child: const Icon(Icons.add),
       ),

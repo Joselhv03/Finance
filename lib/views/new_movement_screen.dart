@@ -1,26 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../app_colors.dart';
+import '../Models/income_bs.dart';
+import '../Controllers/new_movement_controller.dart';
 import '../widgets/ledger_field.dart';
 import '../widgets/selector_chip.dart';
 
-enum MovementType { income, buy, saving, spent }
+// Los 4 tipos "principales" que el usuario elige primero.
+// "Ingreso" se abre en un segundo selector (Bs / USD).
+enum MovementType { ingreso, compra, ahorro, egreso }
 
 enum IncomeCurrency { bs, usd }
 
-class NewMovementScreen extends StatefulWidget {
+// Mismo patrón que AccountsScreen/ProfileScreen: esta clase solo
+// crea el controller y lo expone con Provider; _NewMovementView
+// hace el trabajo real de la pantalla.
+class NewMovementScreen extends StatelessWidget {
   const NewMovementScreen({super.key});
 
   @override
-  State<NewMovementScreen> createState() => _NewMovementScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => NewMovementController(),
+      child: const _NewMovementView(),
+    );
+  }
 }
 
-class _NewMovementScreenState extends State<NewMovementScreen> {
-  MovementType _type = MovementType.income;
+class _NewMovementView extends StatefulWidget {
+  const _NewMovementView();
+
+  @override
+  State<_NewMovementView> createState() => _NewMovementViewState();
+}
+
+class _NewMovementViewState extends State<_NewMovementView> {
+  MovementType _type = MovementType.ingreso;
   IncomeCurrency _ingresoCurrency = IncomeCurrency.bs;
 
-  // Un solo set de controllers que se reutiliza según el formulario
-  // visible; evita tener uno distinto por cada tipo de movimiento.
   final _conceptController = TextEditingController();
   final _amountController = TextEditingController();
   final _rateController = TextEditingController();
@@ -31,8 +49,6 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
 
   final _accounts = const ['General', 'Viaje', 'Casa', 'Emergencia'];
   String? _selectedAccount;
-
-  bool _loading = false;
 
   @override
   void dispose() {
@@ -63,19 +79,53 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
     }
   }
 
-  void _handleSubmit() {
-    // Aquí, cuando conectemos el backend, cada tipo de movimiento va
-    // a llamar a un método distinto del controller (ej.
-    // movimientosController.registrarIngresoBs(...), etc.), usando
-    // los valores de estos mismos controllers.
-    setState(() => _loading = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _loading = false);
-    });
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.ibmPlexSans()),
+        backgroundColor: AppColors.danger,
+      ),
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    final controller = context.read<NewMovementController>();
+
+    if (_type == MovementType.ingreso && _ingresoCurrency == IncomeCurrency.bs) {
+      final concept = _conceptController.text.trim();
+      final amount = double.tryParse(_amountController.text.replaceAll(',', '.'));
+
+      if (concept.isEmpty) {
+        _showError('Ponle un concepto al ingreso');
+        return;
+      }
+      if (amount == null || amount <= 0) {
+        _showError('El monto debe ser un número mayor a 0');
+        return;
+      }
+
+      final success = await controller.submitIncomeBs(
+        IncomeBs(concept: concept, amount: amount, date: _selectedDate),
+      );
+
+      if (!mounted) return;
+      if (success) {
+        Navigator.pop(context);
+      } else {
+        _showError(controller.errorMessage ?? 'Ocurrió un error, intenta de nuevo');
+      }
+      return;
+    }
+
+    // ── Simulación temporal para los tipos todavía no conectados.
+    setState(() {});
+    await Future.delayed(const Duration(milliseconds: 600));
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<NewMovementController>();
+
     return Scaffold(
       backgroundColor: AppColors.ink,
       appBar: AppBar(
@@ -98,7 +148,7 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTypeSelector(),
-              if (_type == MovementType.income) ...[
+              if (_type == MovementType.ingreso) ...[
                 const SizedBox(height: 14),
                 _buildIngresoCurrencySelector(),
               ],
@@ -107,7 +157,7 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
               const SizedBox(height: 32),
               _buildDateField(),
               const SizedBox(height: 32),
-              _buildSubmitButton(),
+              _buildSubmitButton(controller),
             ],
           ),
         ),
@@ -117,10 +167,10 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
 
   Widget _buildTypeSelector() {
     final options = <MovementType, String>{
-      MovementType.income: 'Ingreso',
-      MovementType.buy: 'Compra \$',
-      MovementType.saving: 'Ahorro',
-      MovementType.spent: 'Egreso',
+      MovementType.ingreso: 'Ingreso',
+      MovementType.compra: 'Compra \$',
+      MovementType.ahorro: 'Ahorro',
+      MovementType.egreso: 'Egreso',
     };
 
     return Wrap(
@@ -158,7 +208,7 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
 
   List<Widget> _buildFieldsForType() {
     switch (_type) {
-      case MovementType.income:
+      case MovementType.ingreso:
         if (_ingresoCurrency == IncomeCurrency.bs) {
           return [
             LedgerField(label: 'Concepto', controller: _conceptController),
@@ -181,7 +231,7 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
           ];
         }
 
-      case MovementType.buy:
+      case MovementType.compra:
         return [
           LedgerField(
             label: 'Monto en dólares',
@@ -208,7 +258,7 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
           ],
         ];
 
-      case MovementType.saving:
+      case MovementType.ahorro:
         return [
           LedgerField(
             label: 'Monto en dólares',
@@ -221,7 +271,7 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
           _buildAccountChips(),
         ];
 
-      case MovementType.spent:
+      case MovementType.egreso:
         return [
           _buildAccountLabel(),
           const SizedBox(height: 8),
@@ -288,11 +338,11 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(NewMovementController controller) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _loading ? null : _handleSubmit,
+        onPressed: controller.loading ? null : _handleSubmit,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.usd,
           foregroundColor: AppColors.ink,
@@ -300,7 +350,7 @@ class _NewMovementScreenState extends State<NewMovementScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           elevation: 0,
         ),
-        child: _loading
+        child: controller.loading
             ? const SizedBox(
                 height: 18,
                 width: 18,

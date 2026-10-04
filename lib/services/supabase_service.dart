@@ -172,7 +172,7 @@ class SupabaseService {
  
     await _client.from('Income_bs').insert({
       ...income.toInsertJson(),
-      'month_id': monthId,
+      'month_ID': monthId,
     });
   }
 }

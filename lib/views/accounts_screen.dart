@@ -8,6 +8,8 @@ import '../widgets/expandable_account_card.dart';
 import '../widgets/create_account_sheet.dart';
 import '../widgets/edit_account_sheet.dart';
 
+// Mismo patrón que profile_screen.dart: esta clase solo crea el
+// controller y lo expone con Provider; _AccountsView hace el trabajo.
 class AccountsScreen extends StatelessWidget {
   const AccountsScreen({super.key});
 
@@ -113,6 +115,7 @@ class _AccountsView extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'accounts_fab',
         backgroundColor: AppColors.usd,
         foregroundColor: AppColors.ink,
         elevation: 0,
