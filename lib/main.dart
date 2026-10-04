@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'views/login.dart';
+import 'views/auth_gate.dart';
 
 void main() async {
 
@@ -17,7 +17,6 @@ void main() async {
   runApp(const MainApp());
 }
 
-
 final supabase = Supabase.instance.client;
 
 class MainApp extends StatelessWidget {
@@ -26,7 +25,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: LoginScreen(),
+      home: AuthGate(),
     );
   }
 }
