@@ -1,47 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../app_colors.dart';
+import '../Controllers/months_controller.dart';
 import '../widgets/ledger_card.dart';
 import '../widgets/movement_row.dart';
 
-// Nombres de mes en español. Evita agregar el paquete 'intl' solo
-// para esto — si más adelante formateas fechas en más pantallas,
-// vale la pena migrar a intl entonces.
 const _monthNames = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-class MonthsScreen extends StatefulWidget {
+const _shortMonthNames = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+
+String _formatDay(DateTime date) => '${date.day} ${_shortMonthNames[date.month - 1]}';
+
+class MonthsScreen extends StatelessWidget {
   const MonthsScreen({super.key});
 
   @override
-  State<MonthsScreen> createState() => _MonthsScreenState();
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    return ChangeNotifierProvider(
+      create: (_) => MonthsController()..loadMonth(now.year, now.month),
+      child: const _MonthsView(),
+    );
+  }
 }
 
-class _MonthsScreenState extends State<MonthsScreen> {
+class _MonthsView extends StatefulWidget {
+  const _MonthsView();
+
+  @override
+  State<_MonthsView> createState() => _MonthsViewState();
+}
+
+class _MonthsViewState extends State<_MonthsView> {
   late DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
   void _goToPreviousMonth() {
-    setState(() {
-      _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
-    });
+    setState(() => _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1));
+    _reload();
   }
 
   void _goToNextMonth() {
-    setState(() {
-      _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
-    });
+    setState(() => _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1));
+    _reload();
+  }
+
+  void _reload() {
+    context.read<MonthsController>().loadMonth(_selectedMonth.year, _selectedMonth.month);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Datos de ejemplo solo para el mes actual, para que veas cómo
-    // se ve con contenido. Cualquier otro mes muestra el estado
-    // vacío — útil ya que en la vida real muchos meses sí van a
-    // estar vacíos (ej. si no has usado la app desde antes).
-    final isCurrentMonth = _selectedMonth.year == DateTime.now().year &&
-        _selectedMonth.month == DateTime.now().month;
+    final controller = context.watch<MonthsController>();
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -52,11 +68,7 @@ class _MonthsScreenState extends State<MonthsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildMonthNav(),
-              Expanded(
-                child: isCurrentMonth
-                    ? _buildMonthContent()
-                    : _buildEmptyState(),
-              ),
+              Expanded(child: _buildBody(controller)),
             ],
           ),
         ),
@@ -91,91 +103,112 @@ class _MonthsScreenState extends State<MonthsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Text(
-        'No hay movimientos registrados este mes',
-        style: GoogleFonts.ibmPlexSans(fontSize: 13, color: AppColors.textDim),
-      ),
-    );
-  }
+  Widget _buildBody(MonthsController controller) {
+    if (controller.loading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.usd));
+    }
 
-  Widget _buildMonthContent() {
+    if (controller.errorMessage != null) {
+      return Center(
+        child: Text(
+          'No se pudo cargar este mes',
+          style: GoogleFonts.ibmPlexSans(fontSize: 13, color: AppColors.textDim),
+        ),
+      );
+    }
+
+    if (controller.month == null) {
+      return Center(
+        child: Text(
+          'No hay movimientos registrados este mes',
+          style: GoogleFonts.ibmPlexSans(fontSize: 13, color: AppColors.textDim),
+        ),
+      );
+    }
+
+    final month = controller.month!;
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LedgerCard(
+          LedgerCard(
             label: 'Ingresos del mes',
-            amount: '27.432,55',
+            amount: month.incomeTotal.toStringAsFixed(2),
             currency: 'Bs',
             accentColor: AppColors.bs,
           ),
           const SizedBox(height: 4),
-          const LedgerCard(
+          LedgerCard(
             label: 'Guardado este mes',
-            amount: '130,00',
+            amount: month.totalSaving.toStringAsFixed(2),
             currency: 'USD',
             accentColor: AppColors.usd,
           ),
           const SizedBox(height: 4),
-          const LedgerCard(
+          LedgerCard(
             label: 'Egresos del mes',
-            amount: '15,00',
-            currency: 'USD',
+            amount: month.expense.toStringAsFixed(2),
+            currency: 'Bs',
             accentColor: AppColors.danger,
           ),
           const SizedBox(height: 10),
 
-          _buildSectionLabel('Ingresos'),
-          const MovementRow(
-            description: 'Quincena',
-            dateLabel: '15 sep',
-            amount: '13.716,00 Bs',
-            amountColor: AppColors.bs,
-          ),
-          const MovementRow(
-            description: 'Quincena',
-            dateLabel: '30 sep',
-            amount: '13.716,55 Bs',
-            amountColor: AppColors.bs,
-          ),
+          if (controller.incomesBs.isNotEmpty) ...[
+            _buildSectionLabel('Ingresos en bolívares'),
+            for (final income in controller.incomesBs)
+              MovementRow(
+                description: income.concept,
+                dateLabel: _formatDay(income.date),
+                amount: '${income.amount.toStringAsFixed(2)} Bs',
+                amountColor: AppColors.bs,
+              ),
+          ],
 
-          _buildSectionLabel('Compras de dólares'),
-          const MovementRow(
-            description: 'Compra · tasa 925',
-            dateLabel: '15 sep',
-            amount: '20,00 \$',
-            amountColor: AppColors.usd,
-          ),
-          const MovementRow(
-            description: 'Compra · tasa 930',
-            dateLabel: '28 sep',
-            amount: '20,00 \$',
-            amountColor: AppColors.usd,
-          ),
+          if (controller.incomesDollars.isNotEmpty) ...[
+            _buildSectionLabel('Ingresos en dólares'),
+            for (final income in controller.incomesDollars)
+              MovementRow(
+                description: income.concept,
+                dateLabel: _formatDay(income.date),
+                amount: '${income.amount.toStringAsFixed(2)} \$',
+                amountColor: AppColors.usd,
+              ),
+          ],
 
-          _buildSectionLabel('Ahorros distribuidos'),
-          const MovementRow(
-            description: 'General',
-            dateLabel: '28 sep',
-            amount: '20,00 \$',
-            amountColor: AppColors.usd,
-          ),
-          const MovementRow(
-            description: 'Viaje',
-            dateLabel: '28 sep',
-            amount: '20,00 \$',
-            amountColor: AppColors.usd,
-          ),
+          if (controller.buys.isNotEmpty) ...[
+            _buildSectionLabel('Compras de dólares'),
+            for (final buy in controller.buys)
+              MovementRow(
+                description: 'Compra · tasa ${buy.rate.toStringAsFixed(0)}',
+                dateLabel: _formatDay(buy.date),
+                amount: '${buy.dollarAmount.toStringAsFixed(2)} \$',
+                amountColor: AppColors.usd,
+              ),
+          ],
 
-          _buildSectionLabel('Egresos'),
-          const MovementRow(
-            description: 'Reparación de laptop · Emergencia',
-            dateLabel: '20 sep',
-            amount: '15,00 \$',
-            amountColor: AppColors.danger,
-          ),
+          if (controller.movements.isNotEmpty) ...[
+            _buildSectionLabel('Ahorros distribuidos'),
+            for (final movement in controller.movements)
+              MovementRow(
+                description: controller.accountNames[movement.accountId] ?? 'Cuenta',
+                dateLabel: _formatDay(movement.date),
+                amount: '${movement.dollarAmount.toStringAsFixed(2)} \$',
+                amountColor: AppColors.usd,
+              ),
+          ],
+
+          if (controller.spents.isNotEmpty) ...[
+            _buildSectionLabel('Egresos'),
+            for (final spent in controller.spents)
+              MovementRow(
+                description:
+                    '${spent.description} · ${controller.accountNames[spent.accountId] ?? 'Cuenta'}',
+                dateLabel: _formatDay(spent.date),
+                amount: '${spent.dollarAmount.toStringAsFixed(2)} \$',
+                amountColor: AppColors.danger,
+              ),
+          ],
 
           const SizedBox(height: 20),
         ],
@@ -188,11 +221,7 @@ class _MonthsScreenState extends State<MonthsScreen> {
       padding: const EdgeInsets.only(top: 22, bottom: 4),
       child: Text(
         text.toUpperCase(),
-        style: GoogleFonts.ibmPlexMono(
-          fontSize: 11,
-          color: AppColors.textDim,
-          letterSpacing: 0.5,
-        ),
+        style: GoogleFonts.ibmPlexMono(fontSize: 11, color: AppColors.textDim, letterSpacing: 0.5),
       ),
     );
   }

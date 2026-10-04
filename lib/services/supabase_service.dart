@@ -3,9 +3,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Models/user_profile.dart';
 import '../Models/account.dart';
 import '../Models/income_bs.dart';
+import '../Models/income_dollars.dart';
+import '../Models/buy.dart';
+import '../Models/movement.dart';
+import '../Models/spent.dart';
+import '../Models/month.dart';
 
 // Esta clase es la única parte de tu app que "sabe" cómo hablar con
-// Supabase Auth.
+// Supabase Auth. Tus pantallas (login.dart, register.dart) solo van
+// a llamar a estos métodos, sin saber nada de los detalles de
+// Supabase. Si mañana cambias de backend, solo tocas este archivo.
 class SupabaseService {
   final _client = Supabase.instance.client;
 
@@ -17,6 +24,10 @@ class SupabaseService {
     await _client.auth.signUp(
       email: email,
       password: password,
+      // "data" guarda metadata personalizada junto al usuario.
+      // Usamos la key "display_name" porque es la que el dashboard
+      // de Supabase busca automáticamente para mostrarla en la
+      // columna "Display Name" de Authentication > Users.
       data: {'display_name': username},
     );
   }
@@ -38,6 +49,10 @@ class SupabaseService {
   // Útil para saber, en cualquier pantalla, si ya hay una sesión activa.
   User? get currentUser => _client.auth.currentUser;
 
+  // Lee los datos actuales del usuario logueado y los devuelve ya
+  // como UserProfile (el Model), no como el tipo crudo de Supabase.
+  // Esto es justo la frontera entre Service y Model: aquí es donde
+  // se "traduce" la respuesta de Supabase a tu propia forma de datos.
   UserProfile getCurrentProfile() {
     final user = _client.auth.currentUser;
     return UserProfile(
@@ -164,15 +179,94 @@ class SupabaseService {
         .single();
 
     return created['id'].toString();
-  
-}
+  }
+
+  // ── Movimientos ────────────────────────────────────────────
 
   Future<void> createIncomeBs(IncomeBs income) async {
     final monthId = await getOrCreateMonthId(income.date);
- 
+
     await _client.from('Income_bs').insert({
       ...income.toInsertJson(),
       'month_ID': monthId,
     });
+    // No hace falta actualizar Month.income_total/expense aquí: el
+    // trigger trg_income_bs_affect_month se encarga solo apenas esta
+    // fila se inserta.
+  }
+
+  Future<void> createIncomeDollars(IncomeDollars income) async {
+    final monthId = await getOrCreateMonthId(income.date);
+
+    await _client.from('Income_dollars').insert({
+      ...income.toInsertJson(),
+      'month_ID': monthId,
+    });
+    // El trigger de Income_dollars (que falta crear si todavía no lo
+    // hicimos) debe sumar a Month.total_saving.
+  }
+
+  // Busca el Month del usuario actual para ese año/mes, SIN crearlo
+  // si no existe (a diferencia de getOrCreateMonthId). Devuelve null
+  // cuando ese mes todavía no tiene ningún movimiento registrado.
+  Future<Month?> fetchMonth(int year, int monthNumber) async {
+    final userId = currentUser?.id;
+    if (userId == null) return null;
+
+    final name = monthNameFor(DateTime(year, monthNumber));
+
+    final row = await _client
+        .from('Month')
+        .select()
+        .eq('user_ID', userId)
+        .eq('name', name)
+        .maybeSingle();
+
+    return row != null ? Month.fromJson(row) : null;
+  }
+
+  Future<List<IncomeBs>> fetchIncomeBsForMonth(String monthId) async {
+    final rows = await _client
+        .from('Income_bs')
+        .select()
+        .eq('month_ID', monthId)
+        .order('date');
+    return (rows as List).map((r) => IncomeBs.fromJson(r)).toList();
+  }
+
+  Future<List<IncomeDollars>> fetchIncomeDollarsForMonth(String monthId) async {
+    final rows = await _client
+        .from('Income_dollars')
+        .select()
+        .eq('month_ID', monthId)
+        .order('date');
+    return (rows as List).map((r) => IncomeDollars.fromJson(r)).toList();
+  }
+
+  Future<List<Buy>> fetchBuysForMonth(String monthId) async {
+    final rows = await _client
+        .from('Buy')
+        .select()
+        .eq('month_ID', monthId)
+        .order('date');
+    return (rows as List).map((r) => Buy.fromJson(r)).toList();
+  }
+
+  Future<List<Movement>> fetchMovementsForMonth(String monthId) async {
+    final rows = await _client
+        .from('Movement')
+        .select()
+        .eq('month_ID', monthId)
+        .order('date');
+    return (rows as List).map((r) => Movement.fromJson(r)).toList();
+  }
+
+  Future<List<Spent>> fetchSpentsForMonth(String monthId) async {
+    final rows = await _client
+        .from('Spent')
+        .select()
+        .eq('month_ID', monthId)
+        .order('date');
+    return (rows as List).map((r) => Spent.fromJson(r)).toList();
   }
 }

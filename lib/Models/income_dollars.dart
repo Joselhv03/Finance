@@ -1,24 +1,22 @@
-class IncomeBs {
+class IncomeDollars {
   final String concept;
   final double amount;
   final DateTime date;
 
-  const IncomeBs({
+  const IncomeDollars({
     required this.concept,
     required this.amount,
     required this.date,
   });
 
-  factory IncomeBs.fromJson(Map<String, dynamic> json) {
-    return IncomeBs(
+  factory IncomeDollars.fromJson(Map<String, dynamic> json) {
+    return IncomeDollars(
       concept: json['concept'] as String,
       amount: (json['amount'] as num).toDouble(),
       date: DateTime.parse(json['date'] as String),
     );
   }
 
-  // No incluye month_id: eso lo agrega el Service, que es quien
-  // sabe cómo conseguir o crear el mes correspondiente.
   Map<String, dynamic> toInsertJson() {
     return {
       'concept': concept,

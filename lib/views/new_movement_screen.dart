@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../app_colors.dart';
 import '../Models/income_bs.dart';
+import '../Models/income_dollars.dart';
 import '../Controllers/new_movement_controller.dart';
 import '../widgets/ledger_field.dart';
 import '../widgets/selector_chip.dart';
@@ -91,6 +92,9 @@ class _NewMovementViewState extends State<_NewMovementView> {
   Future<void> _handleSubmit() async {
     final controller = context.read<NewMovementController>();
 
+    // Por ahora solo "Ingreso" + "Bolívares" está conectado de
+    // verdad a Supabase. Los demás tipos siguen con la simulación
+    // mientras los vamos conectando uno por uno.
     if (_type == MovementType.ingreso && _ingresoCurrency == IncomeCurrency.bs) {
       final concept = _conceptController.text.trim();
       final amount = double.tryParse(_amountController.text.replaceAll(',', '.'));
@@ -106,6 +110,32 @@ class _NewMovementViewState extends State<_NewMovementView> {
 
       final success = await controller.submitIncomeBs(
         IncomeBs(concept: concept, amount: amount, date: _selectedDate),
+      );
+
+      if (!mounted) return;
+      if (success) {
+        Navigator.pop(context);
+      } else {
+        _showError(controller.errorMessage ?? 'Ocurrió un error, intenta de nuevo');
+      }
+      return;
+    }
+
+    if (_type == MovementType.ingreso && _ingresoCurrency == IncomeCurrency.usd) {
+      final concept = _conceptController.text.trim();
+      final amount = double.tryParse(_amountController.text.replaceAll(',', '.'));
+
+      if (concept.isEmpty) {
+        _showError('Ponle un concepto al ingreso');
+        return;
+      }
+      if (amount == null || amount <= 0) {
+        _showError('El monto debe ser un número mayor a 0');
+        return;
+      }
+
+      final success = await controller.submitIncomeDollars(
+        IncomeDollars(concept: concept, amount: amount, date: _selectedDate),
       );
 
       if (!mounted) return;
