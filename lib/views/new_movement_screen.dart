@@ -5,12 +5,12 @@ import '../app_colors.dart';
 import '../Models/income_bs.dart';
 import '../Models/income_dollars.dart';
 import '../Models/buy.dart';
+import '../Models/movement.dart';
+import '../Models/spent.dart';
 import '../Controllers/new_movement_controller.dart';
 import '../widgets/ledger_field.dart';
 import '../widgets/selector_chip.dart';
 
-// Los 4 tipos "principales" que el usuario elige primero.
-// "Ingreso" se abre en un segundo selector (Bs / USD).
 enum MovementType { ingreso, compra, ahorro, egreso }
 
 enum IncomeCurrency { bs, usd }
@@ -21,7 +21,7 @@ class NewMovementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => NewMovementController(),
+      create: (_) => NewMovementController()..loadAccounts(),
       child: const _NewMovementView(),
     );
   }
@@ -46,8 +46,8 @@ class _NewMovementViewState extends State<_NewMovementView> {
 
   DateTime _selectedDate = DateTime.now();
 
-  final _accounts = const ['General', 'Viaje', 'Casa', 'Emergencia'];
-  String? _selectedAccount;
+  // Ahora guarda el ID de la cuenta seleccionada, no su nombre.
+  String? _selectedAccountId;
 
   @override
   void dispose() {
@@ -106,13 +106,7 @@ class _NewMovementViewState extends State<_NewMovementView> {
       final success = await controller.submitIncomeBs(
         IncomeBs(concept: concept, amount: amount, date: _selectedDate),
       );
-
-      if (!mounted) return;
-      if (success) {
-        Navigator.pop(context);
-      } else {
-        _showError(controller.errorMessage ?? 'Ocurrió un error, intenta de nuevo');
-      }
+      _finish(success, controller);
       return;
     }
 
@@ -132,13 +126,7 @@ class _NewMovementViewState extends State<_NewMovementView> {
       final success = await controller.submitIncomeDollars(
         IncomeDollars(concept: concept, amount: amount, date: _selectedDate),
       );
-
-      if (!mounted) return;
-      if (success) {
-        Navigator.pop(context);
-      } else {
-        _showError(controller.errorMessage ?? 'Ocurrió un error, intenta de nuevo');
-      }
+      _finish(success, controller);
       return;
     }
 
@@ -165,20 +153,66 @@ class _NewMovementViewState extends State<_NewMovementView> {
           date: _selectedDate,
         ),
       );
-
-      if (!mounted) return;
-      if (success) {
-        Navigator.pop(context);
-      } else {
-        _showError(controller.errorMessage ?? 'Ocurrió un error, intenta de nuevo');
-      }
+      _finish(success, controller);
       return;
     }
 
-    // ── Simulación temporal para los tipos todavía no conectados
-    // (Ahorro, Egreso).
-    setState(() {});
-    await Future.delayed(const Duration(milliseconds: 600));
+    if (_type == MovementType.ahorro) {
+      final amount = double.tryParse(_amountController.text.replaceAll(',', '.'));
+
+      if (_selectedAccountId == null) {
+        _showError('Selecciona a qué cuenta va el ahorro');
+        return;
+      }
+      if (amount == null || amount <= 0) {
+        _showError('El monto debe ser un número mayor a 0');
+        return;
+      }
+
+      final success = await controller.submitMovement(
+        Movement(dollarAmount: amount, accountId: _selectedAccountId!, date: _selectedDate),
+      );
+      _finish(success, controller);
+      return;
+    }
+
+    if (_type == MovementType.egreso) {
+      final amount = double.tryParse(_amountController.text.replaceAll(',', '.'));
+      final description = _descriptionController.text.trim();
+
+      if (_selectedAccountId == null) {
+        _showError('Selecciona de qué cuenta sale el dinero');
+        return;
+      }
+      if (amount == null || amount <= 0) {
+        _showError('El monto debe ser un número mayor a 0');
+        return;
+      }
+      if (description.isEmpty) {
+        _showError('Ponle un motivo al egreso');
+        return;
+      }
+
+      final success = await controller.submitSpent(
+        Spent(
+          dollarAmount: amount,
+          accountId: _selectedAccountId!,
+          description: description,
+          date: _selectedDate,
+        ),
+      );
+      _finish(success, controller);
+      return;
+    }
+  }
+
+  void _finish(bool success, NewMovementController controller) {
+    if (!mounted) return;
+    if (success) {
+      Navigator.pop(context);
+    } else {
+      _showError(controller.errorMessage ?? 'Ocurrió un error, intenta de nuevo');
+    }
   }
 
   @override
@@ -212,7 +246,7 @@ class _NewMovementViewState extends State<_NewMovementView> {
                 _buildIngresoCurrencySelector(),
               ],
               const SizedBox(height: 28),
-              ..._buildFieldsForType(),
+              ..._buildFieldsForType(controller),
               const SizedBox(height: 32),
               _buildDateField(),
               const SizedBox(height: 32),
@@ -265,30 +299,20 @@ class _NewMovementViewState extends State<_NewMovementView> {
     );
   }
 
-  List<Widget> _buildFieldsForType() {
+  List<Widget> _buildFieldsForType(NewMovementController controller) {
     switch (_type) {
       case MovementType.ingreso:
-        if (_ingresoCurrency == IncomeCurrency.bs) {
-          return [
-            LedgerField(label: 'Concepto', controller: _conceptController),
-            const SizedBox(height: 22),
-            LedgerField(
-              label: 'Monto en bolívares',
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ];
-        } else {
-          return [
-            LedgerField(label: 'Concepto', controller: _conceptController),
-            const SizedBox(height: 22),
-            LedgerField(
-              label: 'Monto en dólares',
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ];
-        }
+        return [
+          LedgerField(label: 'Concepto', controller: _conceptController),
+          const SizedBox(height: 22),
+          LedgerField(
+            label: _ingresoCurrency == IncomeCurrency.bs
+                ? 'Monto en bolívares'
+                : 'Monto en dólares',
+            controller: _amountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+        ];
 
       case MovementType.compra:
         return [
@@ -296,8 +320,6 @@ class _NewMovementViewState extends State<_NewMovementView> {
             label: 'Monto en dólares',
             controller: _amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            // El onChanged es lo que faltaba: sin esto, Flutter nunca
-            // se enteraba de que debía recalcular el total en vivo.
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 22),
@@ -308,10 +330,7 @@ class _NewMovementViewState extends State<_NewMovementView> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 22),
-          LedgerField(
-            label: 'Vendedor (opcional)',
-            controller: _sellerController,
-          ),
+          LedgerField(label: 'Vendedor (opcional)', controller: _sellerController),
           if (_calculatedBs != null) ...[
             const SizedBox(height: 14),
             Text(
@@ -329,16 +348,16 @@ class _NewMovementViewState extends State<_NewMovementView> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 22),
-          _buildAccountLabel(),
+          _buildAccountLabel('Cuenta destino'),
           const SizedBox(height: 8),
-          _buildAccountChips(),
+          _buildAccountChips(controller),
         ];
 
       case MovementType.egreso:
         return [
-          _buildAccountLabel(),
+          _buildAccountLabel('Cuenta de origen'),
           const SizedBox(height: 8),
-          _buildAccountChips(),
+          _buildAccountChips(controller),
           const SizedBox(height: 22),
           LedgerField(
             label: 'Monto en dólares',
@@ -346,30 +365,43 @@ class _NewMovementViewState extends State<_NewMovementView> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 22),
-          LedgerField(
-            label: 'Motivo',
-            controller: _descriptionController,
-          ),
+          LedgerField(label: 'Motivo', controller: _descriptionController),
         ];
     }
   }
 
-  Widget _buildAccountLabel() {
+  Widget _buildAccountLabel(String text) {
     return Text(
-      'Cuenta',
+      text,
       style: GoogleFonts.ibmPlexMono(fontSize: 11, color: AppColors.textDim),
     );
   }
 
-  Widget _buildAccountChips() {
+  Widget _buildAccountChips(NewMovementController controller) {
+    if (controller.accountsLoading) {
+      return const SizedBox(
+        height: 24,
+        width: 24,
+        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.usd),
+      );
+    }
+
+    if (controller.accounts.isEmpty) {
+      return Text(
+        'No tienes cuentas de ahorro todavía. Crea una desde la pestaña Cuentas.',
+        style: GoogleFonts.ibmPlexSans(fontSize: 12, color: AppColors.textDim),
+      );
+    }
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: _accounts.map((account) {
+      children: controller.accounts.map((account) {
         return SelectorChip(
-          label: account,
-          selected: _selectedAccount == account,
-          onTap: () => setState(() => _selectedAccount = account),
+          label: account.name,
+          accentColor: account.color,
+          selected: _selectedAccountId == account.id,
+          onTap: () => setState(() => _selectedAccountId = account.id),
         );
       }).toList(),
     );

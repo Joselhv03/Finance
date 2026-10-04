@@ -208,12 +208,32 @@ class SupabaseService {
 
   Future<void> createBuy(Buy buy) async {
     final monthId = await getOrCreateMonthId(buy.date);
- 
+
     await _client.from('Buy').insert({
       ...buy.toInsertJson(),
       'month_ID': monthId,
     });
     // trg_buy_affect_month suma a total_saving y resta de expense.
+  }
+
+  Future<void> createMovement(Movement movement) async {
+    final monthId = await getOrCreateMonthId(movement.date);
+
+    await _client.from('Movement').insert({
+      ...movement.toInsertJson(),
+      'month_ID': monthId,
+    });
+    // trg_movement_affect_account suma a Account.total.
+  }
+
+  Future<void> createSpent(Spent spent) async {
+    final monthId = await getOrCreateMonthId(spent.date);
+
+    await _client.from('Spent').insert({
+      ...spent.toInsertJson(),
+      'month_ID': monthId,
+    });
+    // trg_spent_affect_account resta de Account.total.
   }
 
   // Busca el Month del usuario actual para ese año/mes, SIN crearlo

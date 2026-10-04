@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Models/account.dart';
 import '../services/supabase_service.dart';
+import 'app_refresh_signal.dart';
 
 class AccountsController extends ChangeNotifier {
   final _service = SupabaseService();
@@ -8,6 +9,18 @@ class AccountsController extends ChangeNotifier {
   List<Account> accounts = [];
   bool loading = false;
   String? errorMessage;
+
+  AccountsController() {
+    AppRefreshSignal.instance.addListener(_handleExternalRefresh);
+  }
+
+  @override
+  void dispose() {
+    AppRefreshSignal.instance.removeListener(_handleExternalRefresh);
+    super.dispose();
+  }
+
+  void _handleExternalRefresh() => loadAccounts();
 
   Future<void> loadAccounts() async {
     loading = true;
