@@ -246,9 +246,6 @@ class _MonthsViewState extends State<_MonthsView> {
     );
   }
 
-  // Mismo patrón de confirmación que ya usamos para eliminar una
-  // cuenta de ahorro: un AlertDialog nativo, y solo si el usuario
-  // confirma se ejecuta el borrado real.
   Future<void> _confirmAndDelete(
     BuildContext context,
     MonthsController controller,

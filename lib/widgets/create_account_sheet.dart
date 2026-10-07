@@ -26,13 +26,11 @@ class NewAccountData {
   });
 }
 
-// Función helper: así se abre la hoja desde cualquier pantalla.
-// Devuelve los datos si el usuario guardó, o null si canceló.
 Future<NewAccountData?> showCreateAccountSheet(BuildContext context) {
   return showModalBottomSheet<NewAccountData>(
     context: context,
     backgroundColor: AppColors.surface,
-    isScrollControlled: true, // permite que la hoja crezca con el teclado
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -56,10 +54,6 @@ class _CreateAccountSheetContentState
 
   Color _selectedColor = accountColorPalette.first;
 
-  // Antes esto se mostraba con un SnackBar, pero un SnackBar se
-  // ancla al Scaffold de la pantalla de ATRÁS — que queda tapado
-  // por esta misma hoja modal, así que no se veía hasta cerrarla.
-  // Un texto de error dentro de la propia hoja no tiene ese problema.
   String? _errorText;
 
   @override
@@ -71,8 +65,7 @@ class _CreateAccountSheetContentState
   }
 
   void _handleCreate() {
-    // Limpia cualquier error de un intento anterior antes de validar
-    // de nuevo.
+
     setState(() => _errorText = null);
 
     final name = _nameController.text.trim();
@@ -95,9 +88,6 @@ class _CreateAccountSheetContentState
       return;
     }
 
-    // Cierra la hoja devolviendo los datos ya validados. Quien la
-    // abrió (accounts_screen.dart) decide qué hacer con ellos —
-    // por ahora, solo agregarlos a la lista en memoria.
     Navigator.pop(
       context,
       NewAccountData(
@@ -111,8 +101,7 @@ class _CreateAccountSheetContentState
 
   @override
   Widget build(BuildContext context) {
-    // Padding.viewInsets empuja el contenido hacia arriba cuando el
-    // teclado aparece, para que no tape el campo que estás llenando.
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,

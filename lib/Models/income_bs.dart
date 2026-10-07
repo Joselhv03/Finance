@@ -20,8 +20,6 @@ class IncomeBs {
     );
   }
 
-  // No incluye month_ID: eso lo agrega el Service, que es quien
-  // sabe cómo conseguir o crear el mes correspondiente.
   Map<String, dynamic> toInsertJson() {
     return {
       'concept': concept,

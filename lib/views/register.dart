@@ -58,10 +58,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
         username: _userNameController.text.trim(),
       );
-      // Si llega aquí, el registro fue exitoso. Como desactivamos la
-      // confirmación por correo, Supabase deja la sesión ya iniciada
-      // automáticamente — como pediste volver al login, cerramos esa
-      // sesión a propósito antes de navegar, para forzar el login manual.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -74,9 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
       await _authService.signOut();
-      // Una pequeña pausa para que el SnackBar alcance a verse antes
-      // de que la pantalla cambie — si navegamos de inmediato, se
-      // corta junto con register.dart al desaparecer de la pila.
+
       await Future.delayed(const Duration(milliseconds: 900));
       if (mounted) {
         Navigator.pushReplacement(
@@ -169,8 +163,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 LedgerField(
                   label: 'Confirmar contraseña',
                   controller: _confirmPasswordController,
-                  // Reutiliza el mismo booleano: si el usuario destapa
-                  // una, tiene sentido que se destapen las dos.
                   obscureText: _obscurePassword,
                 ),
                 const SizedBox(height: 32),
@@ -211,8 +203,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      // Vuelve a la pantalla anterior (login), que ya
-                      // está en la pila de navegación.
                       Navigator.pop(context);
                     },
                     child: Text(

@@ -7,14 +7,6 @@ import 'main_navigation.dart';
 import '../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ─────────────────────────────────────────────────────────
-// StatefulWidget vs StatelessWidget:
-// - Un StatelessWidget se dibuja una vez y no cambia solo (ej. un ícono fijo).
-// - Un StatefulWidget puede REDIBUJARSE cuando algo cambia (ej. el usuario
-//   escribe en un campo, o togglea "mostrar contraseña").
-// Como este login necesita recordar lo que el usuario escribe y si la
-// contraseña está oculta o visible, necesita ser Stateful.
-// ─────────────────────────────────────────────────────────
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
  
@@ -72,28 +64,18 @@ void _handleLogin() async {
   }
 }
  
-  // build() es el método que describe QUÉ se dibuja en pantalla.
-  // Flutter lo vuelve a llamar automáticamente cada vez que algo
-  // cambia con setState(). Todo lo que ves en pantalla es un árbol
-  // de widgets anidados dentro de este método.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Scaffold da la estructura base de una pantalla: fondo, y
-      // espacio reservado para cosas como AppBar, si la tuvieras.
       backgroundColor: AppColors.ink,
       body: SafeArea(
         // SafeArea evita que el contenido quede debajo del notch,
         // la barra de estado, o el "island" del celular.
         child: Center(
           child: SingleChildScrollView(
-            // Permite hacer scroll si el teclado tapa parte del
-            // formulario en pantallas pequeñas.
+            // Permite hacer scroll si el teclado tapa parte del formulario en pantallas pequeñas.
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
-              // Column apila widgets verticalmente, uno debajo del otro.
-              // mainAxisSize.min hace que ocupe solo el alto necesario,
-              // en vez de forzar todo el alto de la pantalla.
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

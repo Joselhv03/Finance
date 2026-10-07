@@ -3,9 +3,6 @@ import '../app_colors.dart';
 import '../services/supabase_service.dart';
 import 'app_refresh_signal.dart';
 
-// No es un modelo de la base de datos — es una pieza de datos ya
-// "lista para mostrar", que combina 5 tablas distintas (Income_bs,
-// Income_dollars, Buy, Movement, Spent) en una sola forma común.
 class RecentMovementItem {
   final String description;
   final String amountText;
@@ -52,9 +49,6 @@ class ResumenController extends ChangeNotifier {
       final now = DateTime.now();
       final month = await _service.fetchMonth(now.year, now.month);
 
-      // "Por distribuir" ya no depende de si el mes actual tiene
-      // datos: se pide siempre, porque puede arrastrar pendientes de
-      // meses anteriores.
       pendingToDistribute = await _service.fetchTotalPendingToDistribute();
 
       if (month == null) {

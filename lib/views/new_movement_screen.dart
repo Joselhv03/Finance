@@ -46,7 +46,6 @@ class _NewMovementViewState extends State<_NewMovementView> {
 
   DateTime _selectedDate = DateTime.now();
 
-  // Ahora guarda el ID de la cuenta seleccionada, no su nombre.
   String? _selectedAccountId;
 
   @override

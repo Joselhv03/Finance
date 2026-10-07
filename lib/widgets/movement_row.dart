@@ -7,9 +7,6 @@ class MovementRow extends StatelessWidget {
   final String dateLabel;
   final String amount;
   final Color amountColor;
-  // Opcional: si se pasa, aparece un ícono de borrar al final de la
-  // fila. Si no se pasa (como en ResumenScreen), la fila se ve
-  // exactamente igual que antes.
   final VoidCallback? onDelete;
 
   const MovementRow({

@@ -15,9 +15,6 @@ class Account {
     this.targetAmount,
   });
 
-  // Traduce una fila cruda de Supabase (un Map<String, dynamic>) a
-  // este modelo. Esta es la frontera entre lo que entiende la base
-  // de datos y lo que entiende el resto de la app.
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
       id: json['id'].toString(),
@@ -30,9 +27,6 @@ class Account {
     );
   }
 
-  // Lo que se manda de vuelta a Supabase al crear/actualizar. No
-  // incluye 'id' ni 'user_id' a propósito — esos los pone el Service,
-  // no el Model.
   Map<String, dynamic> toInsertJson() {
     return {
       'name': name,
@@ -49,8 +43,6 @@ class Account {
   }
 
   static String _colorToHex(Color color) {
-    // toRadixString(16) puede devolver menos de 2 dígitos para
-    // valores bajos (ej. 5 en vez de 05), por eso el padLeft.
     String channel(int value) => value.toRadixString(16).padLeft(2, '0');
     return '#${channel(color.red)}${channel(color.green)}${channel(color.blue)}'.toUpperCase();
   }

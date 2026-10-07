@@ -92,12 +92,6 @@ class MonthsController extends ChangeNotifier {
     }
   }
 
-  // ── Borrado ──────────────────────────────────────────────────
-  // Todas comparten el mismo patrón: borran, avisan a la señal
-  // global (que a su vez dispara _handleExternalRefresh y recarga
-  // este mismo mes), y devuelven true/false para que la vista sepa
-  // si mostrar un error.
-
   Future<bool> _deleteAndRefresh(Future<void> Function() action) async {
     try {
       await action();

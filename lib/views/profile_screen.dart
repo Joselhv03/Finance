@@ -7,9 +7,6 @@ import '../widgets/ledger_field.dart';
 import '../services/supabase_service.dart';
 import 'login.dart';
 
-// ProfileScreen es solo el punto de entrada: crea el controller y
-// lo pone disponible con Provider para todo lo que esté debajo.
-// El widget que realmente dibuja la pantalla es _ProfileView.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 

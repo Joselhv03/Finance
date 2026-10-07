@@ -25,10 +25,6 @@ class ProfileController extends ChangeNotifier {
     return _runAction(() => _authService.updatePassword(newPassword));
   }
 
-  // Pequeño helper para no repetir el mismo try/catch/loading en
-  // cada método. Devuelve true si la acción tuvo éxito, false si
-  // falló (y deja el mensaje en errorMessage para que la vista lo
-  // muestre).
   Future<bool> _runAction(Future<void> Function() action) async {
     loading = true;
     errorMessage = null;

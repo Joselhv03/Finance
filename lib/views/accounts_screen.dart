@@ -8,8 +8,6 @@ import '../widgets/expandable_account_card.dart';
 import '../widgets/create_account_sheet.dart';
 import '../widgets/edit_account_sheet.dart';
 
-// Mismo patrón que profile_screen.dart: esta clase solo crea el
-// controller y lo expone con Provider; _AccountsView hace el trabajo.
 class AccountsScreen extends StatelessWidget {
   const AccountsScreen({super.key});
 
@@ -71,9 +69,6 @@ class _AccountsView extends StatelessWidget {
     }
   }
 
-  // Este SÍ es seguro como SnackBar normal: esta pantalla no es una
-  // hoja modal, es la pantalla de fondo, así que el SnackBar se ve
-  // sin que nada lo tape.
   void _showErrorSnackBar(BuildContext context, String? message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -132,9 +127,6 @@ class _AccountsView extends StatelessWidget {
       );
     }
 
-    // El estado vacío real (sin ninguna cuenta) lo dejamos pendiente
-    // a propósito, como quedó acordado — por ahora solo una lista
-    // vacía si no hay cuentas.
     return Builder(
       builder: (context) => ListView.builder(
         itemCount: controller.accounts.length,

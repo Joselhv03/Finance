@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app_colors.dart';
 
-// Reutiliza esta tarjeta para "Ingresos del mes", "Guardado este mes",
-// y cualquier otra métrica grande con una sola línea de color arriba
-// (en vez del típico card con sombra).
 class LedgerCard extends StatelessWidget {
   final String label;
   final String amount;

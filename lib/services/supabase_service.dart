@@ -9,10 +9,8 @@ import '../Models/movement.dart';
 import '../Models/spent.dart';
 import '../Models/month.dart';
 
-// Esta clase es la única parte de tu app que "sabe" cómo hablar con
-// Supabase Auth. Tus pantallas (login.dart, register.dart) solo van
-// a llamar a estos métodos, sin saber nada de los detalles de
-// Supabase. Si mañana cambias de backend, solo tocas este archivo.
+// Esta clase es la única parte de la app que "sabe" cómo hablar con Supabase Auth.
+//Si se cambia de backend, solo se toca este archivo.
 class SupabaseService {
   final _client = Supabase.instance.client;
 
@@ -25,9 +23,6 @@ class SupabaseService {
       email: email,
       password: password,
       // "data" guarda metadata personalizada junto al usuario.
-      // Usamos la key "display_name" porque es la que el dashboard
-      // de Supabase busca automáticamente para mostrarla en la
-      // columna "Display Name" de Authentication > Users.
       data: {'display_name': username},
     );
   }
@@ -49,10 +44,6 @@ class SupabaseService {
   // Útil para saber, en cualquier pantalla, si ya hay una sesión activa.
   User? get currentUser => _client.auth.currentUser;
 
-  // Lee los datos actuales del usuario logueado y los devuelve ya
-  // como UserProfile (el Model), no como el tipo crudo de Supabase.
-  // Esto es justo la frontera entre Service y Model: aquí es donde
-  // se "traduce" la respuesta de Supabase a tu propia forma de datos.
   UserProfile getCurrentProfile() {
     final user = _client.auth.currentUser;
     return UserProfile(
@@ -72,12 +63,6 @@ class SupabaseService {
       UserAttributes(password: newPassword),
     );
   }
-
-  // ── Cuentas de ahorro ──────────────────────────────────────
-  // Si tu tabla o columnas tienen mayúsculas distintas a estas
-  // (ej. "Account" en vez de "account", o "user_ID" en vez de
-  // "user_id"), ajusta los strings de abajo para que coincidan
-  // EXACTAMENTE con lo que ves en el Table Editor de Supabase.
 
   Future<List<Account>> fetchAccounts() async {
     final userId = currentUser?.id;
@@ -190,9 +175,6 @@ class SupabaseService {
       ...income.toInsertJson(),
       'month_ID': monthId,
     });
-    // No hace falta actualizar Month.income_total/expense aquí: el
-    // trigger trg_income_bs_affect_month se encarga solo apenas esta
-    // fila se inserta.
   }
 
   Future<void> createIncomeDollars(IncomeDollars income) async {
@@ -202,8 +184,6 @@ class SupabaseService {
       ...income.toInsertJson(),
       'month_ID': monthId,
     });
-    // El trigger de Income_dollars (que falta crear si todavía no lo
-    // hicimos) debe sumar a Month.total_saving.
   }
 
   Future<void> createBuy(Buy buy) async {
@@ -236,9 +216,6 @@ class SupabaseService {
     // trg_spent_affect_account resta de Account.total.
   }
 
-  // Busca el Month del usuario actual para ese año/mes, SIN crearlo
-  // si no existe (a diferencia de getOrCreateMonthId). Devuelve null
-  // cuando ese mes todavía no tiene ningún movimiento registrado.
   Future<Month?> fetchMonth(int year, int monthNumber) async {
     final userId = currentUser?.id;
     if (userId == null) return null;
@@ -255,11 +232,6 @@ class SupabaseService {
     return row != null ? Month.fromJson(row) : null;
   }
 
-  // Suma TODOS los meses del usuario (no solo el actual), porque lo
-  // "pendiente por distribuir" se arrastra entre meses hasta que
-  // efectivamente lo mueves a una cuenta. No filtramos manualmente
-  // por usuario aquí: las políticas RLS de "Month" y "Movement" ya
-  // garantizan que solo veamos nuestras propias filas.
   Future<double> fetchTotalPendingToDistribute() async {
     final monthsRows = await _client.from('Month').select('total_saving');
     final totalSaving = (monthsRows as List).fold<double>(
@@ -322,9 +294,6 @@ class SupabaseService {
   }
  
   // ── Borrado de movimientos ─────────────────────────────────
-  // No hace falta revertir manualmente los totales: los triggers
-  // de DELETE que ya escribimos se encargan de deshacer el efecto
-  // apenas la fila desaparece.
  
   Future<void> deleteIncomeBs(String id) async {
     await _client.from('Income_bs').delete().eq('id', id);

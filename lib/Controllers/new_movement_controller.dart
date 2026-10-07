@@ -24,8 +24,6 @@ class NewMovementController extends ChangeNotifier {
     try {
       accounts = await _service.fetchAccounts();
     } catch (_) {
-      // Si falla, el selector simplemente queda vacío; no bloqueamos
-      // el resto del formulario por esto.
     } finally {
       accountsLoading = false;
       notifyListeners();
